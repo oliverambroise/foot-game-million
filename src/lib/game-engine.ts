@@ -68,7 +68,7 @@ export type MatchState = {
   awayHoldFrames: number; // images consécutives où l'adversaire garde le ballon (anti temps mort)
 };
 
-const DIFFICULTY_PARAMS: Record<
+const DIFFICULTY_PARAMS: Record
   DifficultyLevel,
   {
     aiSpeed: number;
@@ -78,10 +78,10 @@ const DIFFICULTY_PARAMS: Record<
     keeperSaveChance: number;
   }
 > = {
-  1: { aiSpeed: 0.835, aiReaction: 0.835, tackleSuccess: 0.67, aiShotAccuracy: 0.655, keeperSaveChance: 0.505 },
-  2: { aiSpeed: 0.839, aiReaction: 0.839, tackleSuccess: 0.678, aiShotAccuracy: 0.667, keeperSaveChance: 0.517 },
-  3: { aiSpeed: 0.8435, aiReaction: 0.8435, tackleSuccess: 0.687, aiShotAccuracy: 0.6805, keeperSaveChance: 0.5305 },
-  4: { aiSpeed: 0.849, aiReaction: 0.849, tackleSuccess: 0.698, aiShotAccuracy: 0.697, keeperSaveChance: 0.547 },
+  1: { aiSpeed: 0.55, aiReaction: 0.5, tackleSuccess: 0.22, aiShotAccuracy: 0.18, keeperSaveChance: 0.05 },
+  2: { aiSpeed: 0.63, aiReaction: 0.58, tackleSuccess: 0.32, aiShotAccuracy: 0.28, keeperSaveChance: 0.12 },
+  3: { aiSpeed: 0.71, aiReaction: 0.66, tackleSuccess: 0.42, aiShotAccuracy: 0.4, keeperSaveChance: 0.22 },
+  4: { aiSpeed: 0.78, aiReaction: 0.74, tackleSuccess: 0.52, aiShotAccuracy: 0.52, keeperSaveChance: 0.32 },
 };
 
 export function difficultyFromLevel(levelNumber: number): DifficultyLevel {
@@ -189,9 +189,9 @@ function clampToField(e: { x: number; y: number }) {
 
 const PLAYER_BASE_SPEED = 0.75;
 const DRIBBLE_SPEED_MULT = 1.15;
-const CONTROL_RADIUS = 3.6;
-const LEADER_CONTROL_RADIUS = 5.5; // le meneur (contrôlé par le joueur) récupère plus facilement un ballon libre
-const TACKLE_RADIUS = 4;
+const CONTROL_RADIUS = 4.2;
+const LEADER_CONTROL_RADIUS = 7; // le meneur (contrôlé par le joueur) récupère plus facilement un ballon libre
+const TACKLE_RADIUS = 4.5;
 
 /**
  * Choisit le coéquipier le plus "stratégiquement placé" pour recevoir une
@@ -217,7 +217,6 @@ function pickStrategicTeammate(from: Entity, teammates: Entity[], away: Entity[]
   }
   return best;
 }
-
 /**
  * Avance la simulation d'un pas de temps `dtMs`, en fonction des entrées du
  * joueur humain (équipe "home") et de la difficulté (pilote l'IA).
