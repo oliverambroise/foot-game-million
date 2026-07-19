@@ -68,7 +68,7 @@ export type MatchState = {
   awayHoldFrames: number; // images consécutives où l'adversaire garde le ballon (anti temps mort)
 };
 
-const DIFFICULTY_PARAMS: Record
+const DIFFICULTY_PARAMS: Record<
   DifficultyLevel,
   {
     aiSpeed: number;
@@ -217,6 +217,7 @@ function pickStrategicTeammate(from: Entity, teammates: Entity[], away: Entity[]
   }
   return best;
 }
+
 /**
  * Avance la simulation d'un pas de temps `dtMs`, en fonction des entrées du
  * joueur humain (équipe "home") et de la difficulté (pilote l'IA).
