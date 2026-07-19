@@ -11,7 +11,8 @@ type PlayerRow = {
   hasFinished: boolean;
   totalGoalsScored: number;
   totalGoalsConceded: number;
-  bonusRoundUnlocked: boolean;
+  bonusMatchesAllowed: number;
+  bonusMatchesPlayed: number;
   createdAt: Date;
 };
 
@@ -31,7 +32,8 @@ export default async function AdminPlayersPage() {
       hasFinished: true,
       totalGoalsScored: true,
       totalGoalsConceded: true,
-      bonusRoundUnlocked: true,
+      bonusMatchesAllowed: true,
+      bonusMatchesPlayed: true,
       createdAt: true,
     },
   });
@@ -42,8 +44,8 @@ export default async function AdminPlayersPage() {
       {isManager && (
         <p className="text-xs text-gray-500 mb-3">
           Compte gestionnaire: vous pouvez bloquer/débloquer les joueurs et
-          gérer l&apos;accès aux matchs bonus, mais pas modifier leur niveau
-          ou leur score.
+          déterminer leur nombre de matchs bonus, mais pas modifier leur
+          niveau, leur score ou leur nom.
         </p>
       )}
       <div className="overflow-x-auto">
@@ -83,9 +85,11 @@ export default async function AdminPlayersPage() {
                     {p.status}
                   </span>
                 </td>
-                <td className="py-2 pr-3">
-                  {p.bonusRoundUnlocked ? (
-                    <span className="text-yellow-400">Activé</span>
+                <td className="py-2 pr-3 text-xs">
+                  {p.bonusMatchesAllowed > 0 ? (
+                    <span className="text-yellow-400">
+                      {p.bonusMatchesPlayed}/{p.bonusMatchesAllowed}
+                    </span>
                   ) : (
                     <span className="text-gray-600">—</span>
                   )}
@@ -93,11 +97,12 @@ export default async function AdminPlayersPage() {
                 <td className="py-2 pr-3">
                   <PlayerRowActions
                     playerId={p.id}
+                    playerName={p.name}
                     status={p.status}
                     currentLevel={p.currentLevel}
                     totalGoalsScored={p.totalGoalsScored}
                     totalGoalsConceded={p.totalGoalsConceded}
-                    bonusRoundUnlocked={p.bonusRoundUnlocked}
+                    bonusMatchesAllowed={p.bonusMatchesAllowed}
                     canEditLevelScore={!isManager}
                   />
                 </td>

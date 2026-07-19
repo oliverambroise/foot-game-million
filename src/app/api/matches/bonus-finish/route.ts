@@ -61,11 +61,11 @@ export async function POST(req: NextRequest) {
   if (!player.hasFinished) {
     return NextResponse.json({ error: "Terminez d'abord les 32 matchs" }, { status: 409 });
   }
-  if (!player.bonusRoundUnlocked) {
+  if (player.bonusMatchesAllowed <= 0) {
     return NextResponse.json({ error: "Le parcours bonus n'est pas activé pour ce compte" }, { status: 403 });
   }
-  if (player.bonusMatchesPlayed >= 4) {
-    return NextResponse.json({ error: "Les 4 matchs bonus ont déjà été joués" }, { status: 409 });
+  if (player.bonusMatchesPlayed >= player.bonusMatchesAllowed) {
+    return NextResponse.json({ error: "Tous les matchs bonus accordés ont déjà été joués" }, { status: 409 });
   }
 
   const levelNumber = 32 + player.bonusMatchesPlayed + 1;
@@ -97,7 +97,10 @@ export async function POST(req: NextRequest) {
     });
 
     return NextResponse.json({
-      player: { bonusMatchesPlayed: updatedPlayer.bonusMatchesPlayed },
+      player: {
+        bonusMatchesPlayed: updatedPlayer.bonusMatchesPlayed,
+        bonusMatchesAllowed: updatedPlayer.bonusMatchesAllowed,
+      },
       match: { goalsScored, goalsConceded, levelNumber },
     });
   } catch (err: unknown) {

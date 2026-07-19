@@ -43,8 +43,9 @@ model Player {
   totalDurationMs    Int      @default(0)
   matchesPlayed      Int      @default(0)
 
-  // Parcours bonus (4 matchs faciles après les 32, activable par joueur)
-  bonusRoundUnlocked Boolean  @default(false)
+  // Parcours bonus (nombre de matchs faciles accordés après les 32,
+  // déterminé par l'admin/gestionnaire — 0 par défaut = aucun accès)
+  bonusMatchesAllowed Int      @default(0)
   bonusMatchesPlayed Int      @default(0)
 
   // Conditions d'utilisation

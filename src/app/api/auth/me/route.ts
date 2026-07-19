@@ -24,7 +24,7 @@ export async function GET(req: NextRequest) {
       currentLevel: true,
       hasFinished: true,
       status: true,
-      bonusRoundUnlocked: true,
+      bonusMatchesAllowed: true,
       bonusMatchesPlayed: true,
     },
   });

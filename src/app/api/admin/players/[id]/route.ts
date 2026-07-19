@@ -11,20 +11,22 @@ const schema = z.object({
     "activate",
     "reset-progress",
     "edit",
-    "enable-bonus",
-    "disable-bonus",
+    "set-bonus-matches",
+    "rename",
   ]),
   note: z.string().max(500).optional(),
   currentLevel: z.number().int().min(1).max(32).optional(),
   totalGoalsScored: z.number().int().min(0).max(9999).optional(),
   totalGoalsConceded: z.number().int().min(0).max(9999).optional(),
+  bonusMatchesAllowed: z.number().int().min(0).max(50).optional(),
+  name: z.string().trim().min(2).max(80).optional(),
 });
 
-// Actions qui modifient le niveau ou le score: réservées aux admins complets
-// (le rôle MANAGER peut gérer les codes, bloquer/débloquer les joueurs et
-// activer/désactiver leur accès au parcours bonus, mais jamais toucher au
-// niveau ou au score).
-const ADMIN_ONLY_ACTIONS = new Set(["edit", "reset-progress"]);
+// Actions qui modifient le niveau, le score ou le nom: réservées aux admins
+// complets (le rôle MANAGER peut gérer les codes, bloquer/débloquer les
+// joueurs et déterminer leur nombre de matchs bonus, mais jamais toucher au
+// niveau, au score ou au nom).
+const ADMIN_ONLY_ACTIONS = new Set(["edit", "reset-progress", "rename"]);
 
 export async function PATCH(
   req: NextRequest,
@@ -45,7 +47,7 @@ export async function PATCH(
 
   if (admin.role === "MANAGER" && ADMIN_ONLY_ACTIONS.has(parsed.data.action)) {
     return NextResponse.json(
-      { error: "Un gestionnaire ne peut pas modifier le niveau ou le score d'un joueur" },
+      { error: "Un gestionnaire ne peut pas modifier le niveau, le score ou le nom d'un joueur" },
       { status: 403 }
     );
   }
@@ -76,11 +78,17 @@ export async function PATCH(
         bonusMatchesPlayed: 0,
       };
       break;
-    case "enable-bonus":
-      updateData = { bonusRoundUnlocked: true };
+    case "set-bonus-matches":
+      if (parsed.data.bonusMatchesAllowed === undefined) {
+        return NextResponse.json({ error: "bonusMatchesAllowed requis" }, { status: 400 });
+      }
+      updateData = { bonusMatchesAllowed: parsed.data.bonusMatchesAllowed };
       break;
-    case "disable-bonus":
-      updateData = { bonusRoundUnlocked: false };
+    case "rename":
+      if (!parsed.data.name) {
+        return NextResponse.json({ error: "Nom requis" }, { status: 400 });
+      }
+      updateData = { name: parsed.data.name };
       break;
     case "edit": {
       const edit: Record<string, unknown> = {};
@@ -111,6 +119,37 @@ export async function PATCH(
         targetType: "Player",
         targetId: id,
         metadata: parsed.data.note ?? null,
+      },
+    }),
+  ]);
+
+  return NextResponse.json({ ok: true });
+}
+
+// Suppression complète d'un joueur (admin uniquement) — irréversible.
+export async function DELETE(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const admin = await getAdminFromRequest(req);
+  if (!admin || admin.role === "MANAGER") {
+    return NextResponse.json({ error: "Non autorisé" }, { status: 403 });
+  }
+
+  const { id } = await params;
+  const player = await prisma.player.findUnique({ where: { id } });
+  if (!player) return NextResponse.json({ error: "Joueur introuvable" }, { status: 404 });
+
+  await prisma.$transaction([
+    // Les matchs et notes du joueur sont supprimés automatiquement (cascade)
+    prisma.player.delete({ where: { id } }),
+    prisma.auditLog.create({
+      data: {
+        adminId: admin.id,
+        action: "PLAYER_DELETED",
+        targetType: "Player",
+        targetId: id,
+        metadata: `name=${player.name} phone=${player.phone}`,
       },
     }),
   ]);

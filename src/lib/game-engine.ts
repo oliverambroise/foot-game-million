@@ -78,10 +78,10 @@ const DIFFICULTY_PARAMS: Record<
     keeperSaveChance: number;
   }
 > = {
-  1: { aiSpeed: 0.835, aiReaction: 0.835, tackleSuccess: 0.67, aiShotAccuracy: 0.655, keeperSaveChance: 0.505 },
-  2: { aiSpeed: 0.839, aiReaction: 0.839, tackleSuccess: 0.678, aiShotAccuracy: 0.667, keeperSaveChance: 0.517 },
-  3: { aiSpeed: 0.8435, aiReaction: 0.8435, tackleSuccess: 0.687, aiShotAccuracy: 0.6805, keeperSaveChance: 0.5305 },
-  4: { aiSpeed: 0.849, aiReaction: 0.849, tackleSuccess: 0.698, aiShotAccuracy: 0.697, keeperSaveChance: 0.547 },
+  1: { aiSpeed: 0.4, aiReaction: 0.35, tackleSuccess: 0.1, aiShotAccuracy: 0.06, keeperSaveChance: 0.02 },
+  2: { aiSpeed: 0.55, aiReaction: 0.5, tackleSuccess: 0.28, aiShotAccuracy: 0.22, keeperSaveChance: 0.1 },
+  3: { aiSpeed: 0.91, aiReaction: 0.88, tackleSuccess: 0.62, aiShotAccuracy: 0.68, keeperSaveChance: 0.42 },
+  4: { aiSpeed: 0.9, aiReaction: 0.88, tackleSuccess: 0.74, aiShotAccuracy: 0.8, keeperSaveChance: 0.56 },
 };
 
 export function difficultyFromLevel(levelNumber: number): DifficultyLevel {
@@ -189,9 +189,9 @@ function clampToField(e: { x: number; y: number }) {
 
 const PLAYER_BASE_SPEED = 0.75;
 const DRIBBLE_SPEED_MULT = 1.15;
-const CONTROL_RADIUS = 3.6;
-const LEADER_CONTROL_RADIUS = 5.5; // le meneur (contrôlé par le joueur) récupère plus facilement un ballon libre
-const TACKLE_RADIUS = 4;
+const CONTROL_RADIUS = 4.2;
+const LEADER_CONTROL_RADIUS = 7; // le meneur (contrôlé par le joueur) récupère plus facilement un ballon libre
+const TACKLE_RADIUS = 4.5;
 
 /**
  * Choisit le coéquipier le plus "stratégiquement placé" pour recevoir une
@@ -506,11 +506,16 @@ export function stepMatch(
   // OU forcé après une possession trop longue (anti temps-mort): sans cette
   // règle, l'IA pouvait parfois garder le ballon indéfiniment sans jamais
   // tirer ni progresser, mettant le match en pause de fait.
-  const STALL_THRESHOLD_FRAMES = 150; // ~2.5s à 60 im/s
+  const STALL_THRESHOLD_FRAMES = 200 - params.aiShotAccuracy * 150; // ~1.2s à 3.3s selon la difficulté
   if (ball.ownerId?.startsWith("away")) {
     const carrier = away.find((a) => a.id === ball.ownerId)!;
     const forcedByStall = awayHoldFrames >= STALL_THRESHOLD_FRAMES;
-    if (forcedByStall || (carrier.x < 25 && rand() < 0.02 * params.aiShotAccuracy * 4)) {
+    // Portée de tir proportionnelle à la difficulté: aux niveaux élevés,
+    // l'IA n'attend pas d'être collée au but pour tirer — elle est plus
+    // efficace et vigilante, elle tente sa chance de plus loin.
+    const shotRange = 16 + params.aiShotAccuracy * 26;
+    const shotChance = 0.02 * params.aiShotAccuracy * 5;
+    if (forcedByStall || (carrier.x < shotRange && rand() < shotChance)) {
       const goalX = 0;
       const goalY = FIELD_H / 2 + (rand() - 0.5) * (10 - params.aiShotAccuracy * 8);
       const dx = goalX - ball.x;

@@ -9,7 +9,7 @@ type Me = {
   name: string;
   currentLevel: number;
   hasFinished: boolean;
-  bonusRoundUnlocked: boolean;
+  bonusMatchesAllowed: number;
   bonusMatchesPlayed: number;
 };
 
@@ -57,7 +57,7 @@ export default function FinPage() {
     );
   }
 
-  const bonusAvailable = me?.bonusRoundUnlocked && me.bonusMatchesPlayed < 4;
+  const bonusAvailable = (me?.bonusMatchesAllowed ?? 0) > (me?.bonusMatchesPlayed ?? 0);
 
   return (
     <main className="min-h-screen flex flex-col bg-gradient-to-b from-green-900 to-green-950 text-white">
@@ -89,7 +89,7 @@ export default function FinPage() {
             href="/bonus"
             className="block w-full max-w-xs bg-yellow-500 hover:bg-yellow-400 text-black font-bold px-6 py-3 rounded-full mb-3"
           >
-            ⭐ Jouer mes matchs bonus ({4 - (me?.bonusMatchesPlayed ?? 0)} restants)
+            ⭐ Jouer mes matchs bonus ({(me?.bonusMatchesAllowed ?? 0) - (me?.bonusMatchesPlayed ?? 0)} restants)
           </Link>
         )}
       </div>

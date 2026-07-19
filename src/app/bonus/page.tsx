@@ -7,7 +7,7 @@ import GameHeaderBar from "@/components/GameHeaderBar";
 import { authFetch } from "@/lib/client-fetch";
 
 type Player = {
-  bonusRoundUnlocked: boolean;
+  bonusMatchesAllowed: number;
   bonusMatchesPlayed: number;
   hasFinished: boolean;
 };
@@ -44,7 +44,7 @@ export default function BonusPage() {
       const settings = settingsRes.ok ? await settingsRes.json() : {};
       if (cancelled) return;
 
-      if (!me.player.hasFinished || !me.player.bonusRoundUnlocked || me.player.bonusMatchesPlayed >= 4) {
+      if (!me.player.hasFinished || me.player.bonusMatchesPlayed >= me.player.bonusMatchesAllowed) {
         router.replace("/fin");
         return;
       }
@@ -77,7 +77,7 @@ export default function BonusPage() {
         return;
       }
       setPlayer((prev) => (prev ? { ...prev, bonusMatchesPlayed: data.player.bonusMatchesPlayed } : prev));
-      setScreen(data.player.bonusMatchesPlayed >= 4 ? "done" : "post-match");
+      setScreen(data.player.bonusMatchesPlayed >= data.player.bonusMatchesAllowed ? "done" : "post-match");
     } catch {
       setErrorMsg("Impossible de contacter le serveur. Vérifiez votre connexion.");
       setScreen("error");
@@ -115,8 +115,8 @@ export default function BonusPage() {
               </a>
             )}
             <p className="text-green-200 text-sm">
-              Match bonus {player.bonusMatchesPlayed + 1} / 4 — niveau facile, pour
-              améliorer votre score.
+              Match bonus {player.bonusMatchesPlayed + 1} / {player.bonusMatchesAllowed} — niveau
+              facile, pour améliorer votre score.
             </p>
             <button
               onClick={() => setScreen("playing")}
