@@ -1,0 +1,206 @@
+// Schéma Prisma — Jeu de football
+// NOTE: provider "sqlite" pour le développement local dans ce sandbox.
+// En production, remplacer par:
+//   datasource db { provider = "postgresql"; url = env("DATABASE_URL") }
+// et relancer `npx prisma migrate dev`.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------------------------------------------------------------------------
+// PHASE 1 — Joueurs, codes de participation, authentification
+// ---------------------------------------------------------------------------
+
+enum PlayerStatus {
+  ACTIVE
+  BLOCKED
+  DISABLED
+}
+
+model Player {
+  id             String       @id @default(cuid())
+  name           String
+  phone          String       @unique
+  status         PlayerStatus @default(ACTIVE)
+
+  // Progression (utilisée dès la Phase 3, mais suivie dès l'inscription)
+  currentLevel   Int          @default(1)
+  hasFinished    Boolean      @default(false)
+
+  // Solde virtuel pour bonus/rejoue (Phase 6)
+  balance         Int          @default(0)
+
+  // Totaux agrégés (mis à jour à chaque match, évite de recalculer le
+  // classement en sommant tous les matchs à chaque requête)
+  totalGoalsScored   Int      @default(0)
+  totalGoalsConceded Int      @default(0)
+  totalDurationMs    Int      @default(0)
+  matchesPlayed      Int      @default(0)
+
+  // Parcours bonus (4 matchs faciles après les 32, activable par joueur)
+  bonusRoundUnlocked Boolean  @default(false)
+  bonusMatchesPlayed Int      @default(0)
+
+  // Conditions d'utilisation
+  acceptedTermsAt    DateTime?
+
+  // Sécurité / session
+  passwordHash    String?      // optionnel: le joueur peut définir un mot de passe pour se reconnecter plus vite
+  refreshTokenHash String?
+
+  // Relations
+  participationCode   ParticipationCode? @relation(fields: [participationCodeId], references: [id])
+  participationCodeId String?            @unique
+
+  matches         Match[]
+  internalNotes   PlayerNote[]
+
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  @@index([status])
+}
+
+model ParticipationCode {
+  id          String    @id @default(cuid())
+  code        String    @unique // ex: FOOT-4F92-XQ21
+  isUsed      Boolean   @default(false)
+  usedAt      DateTime?
+
+  player      Player?
+
+  createdByAdminId String?
+  createdByAdmin   AdminUser? @relation(fields: [createdByAdminId], references: [id])
+
+  createdAt   DateTime  @default(now())
+
+  @@index([isUsed])
+}
+
+model PlayerNote {
+  id        String   @id @default(cuid())
+  player    Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  playerId  String
+  content   String
+  createdByAdminId String?
+  createdAt DateTime @default(now())
+}
+
+// ---------------------------------------------------------------------------
+// ADMINISTRATION — Auth admin + journalisation (base posée en Phase 1,
+// complétée en Phase 5/7)
+// ---------------------------------------------------------------------------
+
+enum AdminRole {
+  SUPER_ADMIN
+  ADMIN
+  MANAGER
+}
+
+model AdminUser {
+  id                String    @id @default(cuid())
+  email             String    @unique
+  passwordHash      String
+  role              AdminRole @default(ADMIN)
+  isActive          Boolean   @default(true)
+
+  // 2FA par email
+  twoFactorCodeHash String?
+  twoFactorExpiresAt DateTime?
+
+  refreshTokenHash  String?
+
+  participationCodes ParticipationCode[]
+  loginLogs         AdminLoginLog[]
+  auditLogs         AuditLog[]
+
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+}
+
+model AdminLoginLog {
+  id         String    @id @default(cuid())
+  admin      AdminUser @relation(fields: [adminId], references: [id], onDelete: Cascade)
+  adminId    String
+  ipAddress  String
+  userAgent  String?
+  success    Boolean
+  createdAt  DateTime  @default(now())
+}
+
+model AuditLog {
+  id         String    @id @default(cuid())
+  admin      AdminUser @relation(fields: [adminId], references: [id])
+  adminId    String
+  action     String    // ex: "PLAYER_SCORE_UPDATED", "LEVEL_DIFFICULTY_CHANGED"
+  targetType String?   // ex: "Player", "LevelConfig"
+  targetId   String?
+  metadata   String?   // JSON sérialisé (détails avant/après)
+  ipAddress  String?
+  createdAt  DateTime  @default(now())
+
+  @@index([action])
+  @@index([adminId])
+}
+
+// ---------------------------------------------------------------------------
+// STUBS — Phases suivantes (structure posée pour éviter des migrations
+// destructives plus tard ; non utilisés activement en Phase 1)
+// ---------------------------------------------------------------------------
+
+model GameSettings {
+  id                String   @id @default("singleton")
+  leaderboardTopN   Int      @default(20)
+  closingAt         DateTime?
+  maintenanceMode   Boolean  @default(false)
+  matchDurationSec  Int      @default(120)
+
+  // Message affiché au-dessus de l'aire de jeu (annonces diverses)
+  bannerMessage     String?
+
+  // Parcours bonus: message personnalisé expliquant les conditions d'accès
+  bonusRoundMessage String?
+  // URL du bouton "Cliquez pour gagner des matchs bonus" affiché sous ce message
+  bonusCtaUrl       String?
+
+  // Lien vers les règlements/politiques (acceptation obligatoire à l'inscription)
+  termsUrl          String?
+
+  updatedAt         DateTime @updatedAt
+}
+
+enum Difficulty {
+  EASY
+  MEDIUM
+  HARD
+  VERY_HARD
+}
+
+model LevelConfig {
+  id          String     @id @default(cuid())
+  levelNumber Int        @unique // 1 à 32
+  difficulty  Difficulty
+  updatedAt   DateTime   @updatedAt
+}
+
+model Match {
+  id            String   @id @default(cuid())
+  player        Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  playerId      String
+  levelNumber   Int
+  goalsScored   Int      @default(0)
+  goalsConceded Int      @default(0)
+  durationMs    Int?
+  difficulty    Difficulty
+  finishedAt    DateTime?
+  createdAt     DateTime @default(now())
+
+  @@unique([playerId, levelNumber])
+  @@index([playerId])
+}

@@ -1,0 +1,14 @@
+{
+  "name": "Défi Football",
+  "short_name": "Défi Foot",
+  "description": "32 matchs contre la programmation du jeu. Un seul classement.",
+  "start_url": "/inscription",
+  "display": "standalone",
+  "background_color": "#052e16",
+  "theme_color": "#052e16",
+  "orientation": "portrait-primary",
+  "icons": [
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}
