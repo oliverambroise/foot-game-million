@@ -78,10 +78,10 @@ const DIFFICULTY_PARAMS: Record<
     keeperSaveChance: number;
   }
 > = {
-  1: { aiSpeed: 0.55, aiReaction: 0.5, tackleSuccess: 0.22, aiShotAccuracy: 0.18, keeperSaveChance: 0.05 },
-  2: { aiSpeed: 0.63, aiReaction: 0.58, tackleSuccess: 0.32, aiShotAccuracy: 0.28, keeperSaveChance: 0.12 },
-  3: { aiSpeed: 0.71, aiReaction: 0.66, tackleSuccess: 0.42, aiShotAccuracy: 0.4, keeperSaveChance: 0.22 },
-  4: { aiSpeed: 0.78, aiReaction: 0.74, tackleSuccess: 0.52, aiShotAccuracy: 0.52, keeperSaveChance: 0.32 },
+  1: { aiSpeed: 0.4, aiReaction: 0.35, tackleSuccess: 0.1, aiShotAccuracy: 0.06, keeperSaveChance: 0.02 },
+  2: { aiSpeed: 0.55, aiReaction: 0.5, tackleSuccess: 0.28, aiShotAccuracy: 0.22, keeperSaveChance: 0.1 },
+  3: { aiSpeed: 0.91, aiReaction: 0.88, tackleSuccess: 0.62, aiShotAccuracy: 0.68, keeperSaveChance: 0.42 },
+  4: { aiSpeed: 0.9, aiReaction: 0.88, tackleSuccess: 0.74, aiShotAccuracy: 0.8, keeperSaveChance: 0.56 },
 };
 
 export function difficultyFromLevel(levelNumber: number): DifficultyLevel {
@@ -506,11 +506,16 @@ export function stepMatch(
   // OU forcé après une possession trop longue (anti temps-mort): sans cette
   // règle, l'IA pouvait parfois garder le ballon indéfiniment sans jamais
   // tirer ni progresser, mettant le match en pause de fait.
-  const STALL_THRESHOLD_FRAMES = 150; // ~2.5s à 60 im/s
+  const STALL_THRESHOLD_FRAMES = 200 - params.aiShotAccuracy * 150; // ~1.2s à 3.3s selon la difficulté
   if (ball.ownerId?.startsWith("away")) {
     const carrier = away.find((a) => a.id === ball.ownerId)!;
     const forcedByStall = awayHoldFrames >= STALL_THRESHOLD_FRAMES;
-    if (forcedByStall || (carrier.x < 25 && rand() < 0.02 * params.aiShotAccuracy * 4)) {
+    // Portée de tir proportionnelle à la difficulté: aux niveaux élevés,
+    // l'IA n'attend pas d'être collée au but pour tirer — elle est plus
+    // efficace et vigilante, elle tente sa chance de plus loin.
+    const shotRange = 16 + params.aiShotAccuracy * 26;
+    const shotChance = 0.02 * params.aiShotAccuracy * 5;
+    if (forcedByStall || (carrier.x < shotRange && rand() < shotChance)) {
       const goalX = 0;
       const goalY = FIELD_H / 2 + (rand() - 0.5) * (10 - params.aiShotAccuracy * 8);
       const dx = goalX - ball.x;
