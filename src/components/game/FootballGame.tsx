@@ -4,13 +4,13 @@ import { useRef, useEffect, useState, useCallback } from "react";
 import {
   createInitialMatchState,
   stepMatch,
-  difficultyFromLevel,
   FIELD_W,
   FIELD_H,
   GOAL_WIDTH,
   type MatchState,
   type Direction,
   type MatchInput,
+  type DifficultyLevel,
 } from "@/lib/game-engine";
 import {
   startStadiumMusic,
@@ -22,6 +22,7 @@ import {
 type Props = {
   levelNumber: number;
   matchDurationSec: number;
+  difficulty: DifficultyLevel;
   onFinish: (result: {
     goalsScored: number;
     goalsConceded: number;
@@ -30,7 +31,7 @@ type Props = {
   }) => void;
 };
 
-export default function FootballGame({ levelNumber, matchDurationSec, onFinish }: Props) {
+export default function FootballGame({ levelNumber, matchDurationSec, difficulty, onFinish }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const stateRef = useRef<MatchState>(createInitialMatchState(matchDurationSec));
   const inputRef = useRef<MatchInput>({
@@ -47,7 +48,6 @@ export default function FootballGame({ levelNumber, matchDurationSec, onFinish }
     secondsLeft: matchDurationSec,
   });
   const finishedRef = useRef(false);
-  const difficulty = difficultyFromLevel(levelNumber);
   const [muted, setMuted] = useState(false);
   const [paused, setPaused] = useState(false);
   const pausedRef = useRef(false);

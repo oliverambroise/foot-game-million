@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import FootballGame from "@/components/game/FootballGame";
 import GameHeaderBar from "@/components/GameHeaderBar";
 import { authFetch } from "@/lib/client-fetch";
+import { difficultyLevelFromLabel, type DifficultyLevel } from "@/lib/game-engine";
 
 type Player = {
   id: string;
@@ -20,11 +21,24 @@ export default function JeuPage() {
   const [player, setPlayer] = useState<Player | null>(null);
   const [matchDurationSec, setMatchDurationSec] = useState(120);
   const [bannerMessage, setBannerMessage] = useState<string | null>(null);
+  const [difficulty, setDifficulty] = useState<DifficultyLevel>(1);
   const [screen, setScreen] = useState<Screen>("loading");
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [lastResult, setLastResult] = useState<{ goalsScored: number; goalsConceded: number } | null>(
     null
   );
+
+  async function loadDifficultyFor(levelNumber: number) {
+    try {
+      const res = await fetch(`/api/levels/${levelNumber}`);
+      if (res.ok) {
+        const data = await res.json();
+        setDifficulty(difficultyLevelFromLabel(data.difficulty));
+      }
+    } catch {
+      // en cas d'échec, on garde la dernière difficulté connue (par défaut 1)
+    }
+  }
 
   useEffect(() => {
     let cancelled = false;
@@ -65,6 +79,8 @@ export default function JeuPage() {
         router.replace("/fin");
         return;
       }
+      await loadDifficultyFor(me.player.currentLevel);
+      if (cancelled) return;
       setScreen("pre-match");
     }
 
@@ -111,11 +127,12 @@ export default function JeuPage() {
     }
   }
 
-  function continueToNextLevel() {
+  async function continueToNextLevel() {
     if (player?.hasFinished) {
       router.push("/fin");
       return;
     }
+    if (player) await loadDifficultyFor(player.currentLevel);
     setScreen("pre-match");
   }
 
@@ -171,6 +188,7 @@ export default function JeuPage() {
           <FootballGame
             levelNumber={player.currentLevel}
             matchDurationSec={matchDurationSec}
+            difficulty={difficulty}
             onFinish={handleFinish}
           />
         )}

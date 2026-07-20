@@ -130,6 +130,7 @@ export default function BonusPage() {
         {screen === "playing" && (
           <FootballGame
             levelNumber={33 + player.bonusMatchesPlayed}
+            difficulty={1}
             matchDurationSec={matchDurationSec}
             onFinish={handleFinish}
           />

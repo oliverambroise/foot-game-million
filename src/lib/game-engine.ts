@@ -92,6 +92,22 @@ export function difficultyFromLevel(levelNumber: number): DifficultyLevel {
   return 4;
 }
 
+/** Convertit la difficulté stockée en base (texte) vers le niveau 1-4 du moteur. */
+export function difficultyLevelFromLabel(
+  label: "EASY" | "MEDIUM" | "HARD" | "VERY_HARD"
+): DifficultyLevel {
+  switch (label) {
+    case "EASY":
+      return 1;
+    case "MEDIUM":
+      return 2;
+    case "HARD":
+      return 3;
+    case "VERY_HARD":
+      return 4;
+  }
+}
+
 // Petit générateur pseudo-aléatoire déterministe (mulberry32) pour que la
 // simulation reste reproductible/testable si besoin d'un seed fixe.
 function mulberry32(seed: number) {
